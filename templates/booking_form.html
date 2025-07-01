@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% block title %}Booking Jadwal Baru{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800"><i class="bi bi-pencil-square me-2"></i> Buat Booking Baru</h1>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Formulir Booking</h6>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('halaman_booking') }}" method="POST">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="dosen" class="form-label">Nama Dosen</label>
+                        {% if current_user.role == 'dosen' %}
+                            <input type="text" class="form-control" id="dosen" name="dosen" value="{{ form_data.dosen or current_user.username }}" readonly>
+                        {% else %}
+                            <input type="text" class="form-control" id="dosen" name="dosen" value="{{ form_data.dosen or '' }}" required>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="matkul" class="form-label">Mata Kuliah</label>
+                        <input type="text" class="form-control" id="matkul" name="matkul" value="{{ form_data.matkul or '' }}" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="kelas" class="form-label">Kelas</label>
+                        <input type="text" class="form-control" id="kelas" name="kelas" value="{{ form_data.kelas or '' }}" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Tipe Kelas</label>
+                        <div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="tipe_kelas" id="offline" value="Offline" {% if form_data.get('tipe_kelas', 'Offline') == 'Offline' %}checked{% endif %}>
+                                <label class="form-check-label" for="offline">Offline</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="tipe_kelas" id="online" value="Online" {% if form_data.tipe_kelas == 'Online' %}checked{% endif %}>
+                                <label class="form-check-label" for="online">Online</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="hari" class="form-label">Hari</label>
+                        <select class="form-select" id="hari" name="hari" required>
+                            <option value="" disabled {% if not form_data.day %}selected{% endif %}>-- Pilih Hari --</option>
+                            {% for h in ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'] %}
+                                <option value="{{ h }}" {% if form_data.day == h %}selected{% endif %}>{{ h }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="jam_mulai" class="form-label">Jam Mulai</label>
+                        <input type="time" class="form-control" id="jam_mulai" name="jam_mulai" value="{{ form_data.start_time or '' }}" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="jam_selesai" class="form-label">Jam Selesai</label>
+                        <input type="time" class="form-control" id="jam_selesai" name="jam_selesai" value="{{ form_data.end_time or '' }}" required>
+                    </div>
+                </div>
+                <div class="row" id="lokasi-section">
+                    <div class="col-md-4 mb-3">
+                        <label for="gedung" class="form-label">Gedung</label>
+                        <select class="form-select" id="gedung" name="gedung"></select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="lantai" class="form-label">Lantai</label>
+                        <select class="form-select" id="lantai" name="lantai"></select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="ruangan" class="form-label">Ruangan</label>
+                        <select class="form-select" id="ruangan" name="ruangan"></select>
+                    </div>
+                </div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Simpan Booking</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dataGedung = {{ data_gedung|tojson|safe }};
+        const form_data = {{ form_data|tojson|safe }};
+        const lokasiSection = document.getElementById('lokasi-section');
+
+        const gedungSelect = document.getElementById('gedung');
+        const lantaiSelect = document.getElementById('lantai');
+        const ruanganSelect = document.getElementById('ruangan');
+
+        function updateRuanganDropdown() {
+            const gedungTerpilih = gedungSelect.value;
+            const lantaiTerpilih = lantaiSelect.value;
+            ruanganSelect.innerHTML = '<option value="">-- Pilih Ruangan --</option>';
+            if (gedungTerpilih && lantaiTerpilih && dataGedung[gedungTerpilih] && dataGedung[gedungTerpilih][lantaiTerpilih]) {
+                dataGedung[gedungTerpilih][lantaiTerpilih].forEach(r => {
+                    const o = new Option(r, r);
+                    if (form_data.room == r) o.selected = true;
+                    ruanganSelect.add(o);
+                });
+            }
+        }
+
+        function updateLantaiDropdown() {
+            const gedungTerpilih = gedungSelect.value;
+            lantaiSelect.innerHTML = '<option value="">-- Pilih Lantai --</option>';
+            ruanganSelect.innerHTML = '<option value="">-- Pilih Ruangan --</option>';
+            if (gedungTerpilih && dataGedung[gedungTerpilih]) {
+                Object.keys(dataGedung[gedungTerpilih]).forEach(l => {
+                    const o = new Option(l, l);
+                    if (form_data.lantai == l) o.selected = true;
+                    lantaiSelect.add(o);
+                });
+            }
+            updateRuanganDropdown();
+        }
+
+        function handleTipeKelasChange() {
+            const isOnline = document.querySelector('input[name="tipe_kelas"]:checked').value === 'Online';
+            lokasiSection.style.display = isOnline ? 'none' : 'flex';
+            ['gedung', 'lantai', 'ruangan'].forEach(id => document.getElementById(id).required = !isOnline);
+        }
+
+        // Initialize Gedung
+        Object.keys(dataGedung).forEach(g => {
+            const o = new Option(g, g);
+            if(form_data.gedung == g) o.selected = true;
+            gedungSelect.add(o);
+        });
+
+        document.querySelectorAll('input[name="tipe_kelas"]').forEach(r => r.addEventListener('change', handleTipeKelasChange));
+        gedungSelect.addEventListener('change', updateLantaiDropdown);
+        lantaiSelect.addEventListener('change', updateRuanganDropdown);
+
+        // Initial state
+        handleTipeKelasChange();
+        updateLantaiDropdown();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}Generate Jadwal Otomatis{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800"><i class="bi bi-robot me-2"></i> Generate Jadwal Otomatis</h1>
+
+    <div class="card shadow mb-4" id="generate-form-card">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Upload File</h6>
+        </div>
+        <div class="card-body">
+            <form id="generateForm" action="{{ url_for('halaman_generate') }}" method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="file" class="form-label">Upload File Excel (.xlsx) atau CSV (.csv)</label>
+                    <input class="form-control" type="file" id="file" name="file" accept=".xlsx, .csv" required>
+                    <div class="form-text">Pastikan file memiliki kolom: MATA KULIAH, SKS, KELAS, DOSEN PENGAJAR.</div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-magic"></i> Mulai Generate</button>
+            </form>
+            <a href="{{ url_for('download_template') }}" class="btn btn-outline-info w-100 mt-2"><i class="bi bi-download"></i> Unduh Template Excel</a>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4" id="progress-card" style="display: none;">
+        <div class="card-header py-3">
+             <h6 class="m-0 font-weight-bold text-primary">Proses Generate</h6>
+        </div>
+        <div class="card-body">
+            <div class="text-center mb-3">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2" id="progress-message">Memulai...</p>
+            </div>
+            <div class="progress" style="height: 30px;">
+                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Script JavaScript untuk progress bar sama seperti di file asli
+    // Anda bisa copy-paste dari file generate_jadwal.html lama
+    document.addEventListener('DOMContentLoaded', function() {
+        const generateForm = document.getElementById('generateForm');
+        const generateFormCard = document.getElementById('generate-form-card');
+        const progressCard = document.getElementById('progress-card');
+        const progressBar = document.getElementById('progressBar');
+        const progressMessage = document.getElementById('progress-message');
+
+        let intervalId;
+
+        generateForm.addEventListener('submit', function(e) {
+            if (document.getElementById('file').files.length === 0) {
+                alert("Silakan pilih file terlebih dahulu.");
+                e.preventDefault();
+                return;
+            }
+
+            generateFormCard.style.display = 'none';
+            progressCard.style.display = 'block';
+
+            // Start polling for progress
+            intervalId = setInterval(fetchProgress, 1000);
+        });
+
+        function fetchProgress() {
+            fetch("{{ url_for('get_generate_progress') }}")
+                .then(response => response.json())
+                .then(data => {
+                     const total = data.total_items;
+                    const processed = data.processed_items;
+                    const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
+                    
+                    progressBar.style.width = percentage + '%';
+                    progressBar.textContent = percentage + '%';
+                    progressMessage.textContent = data.message;
+
+                    if (data.status === 'completed' || data.status === 'failed') {
+                        clearInterval(intervalId);
+                        progressBar.classList.remove('progress-bar-animated');
+                        if (data.status === 'completed') {
+                             progressBar.classList.add('bg-success');
+                             // Redirect will be handled by the form submission response
+                        } else {
+                            progressBar.classList.add('bg-danger');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching progress:', error);
+                    clearInterval(intervalId);
+                });
+        }
+    });
+</script>
+{% endblock %}

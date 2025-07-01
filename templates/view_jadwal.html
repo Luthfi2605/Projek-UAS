@@ -1,0 +1,105 @@
+ {% extends 'base.html' %}
+{% block title %}Lihat Jadwal{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800"><i class="bi bi-table me-2"></i> Jadwal Saat Ini</h1>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Filter & Aksi</h6>
+            <div>
+                 {% if current_user.role == 'admin' %}
+                    <form method="POST" action="{{ url_for('delete_all_schedules') }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus SEMUA jadwal? Aksi ini tidak dapat dibatalkan!');" class="d-inline">
+                        <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash-fill me-2"></i>Hapus Semua</button>
+                    </form>
+                {% endif %}
+                <a href="{{ url_for('download_excel', filter_by=filter_by, filter_value=filter_value) }}" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-excel-fill me-2"></i>Excel</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('halaman_jadwal') }}" class="row g-3 align-items-center">
+                <div class="col-md-3">
+                    <label for="filter_by" class="form-label">Filter Berdasarkan</label>
+                    <select class="form-select" id="filter_by" name="filter_by">
+                        <option value="Hari" {% if filter_by == 'Hari' %}selected{% endif %}>Hari</option>
+                        <option value="Ruangan" {% if filter_by == 'Ruangan' %}selected{% endif %}>Ruangan</option>
+                        <option value="Kelas" {% if filter_by == 'Kelas' %}selected{% endif %}>Kelas</option>
+                        <option value="Dosen" {% if filter_by == 'Dosen' %}selected{% endif %}>Dosen</option>
+                    </select>
+                </div>
+                <div class="col-md-7">
+                    <label for="filter_value" class="form-label">Nilai Filter</label>
+                    <input type="text" class="form-control" id="filter_value" name="filter_value" placeholder="Ketik nilai filter..." value="{{ filter_value }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel-fill me-2"></i>Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Daftar Jadwal (Total: {{ jadwal_list | length }})</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                {% if jadwal_list %}
+                <table class="table table-bordered table-hover" id="dataTable" width="100%" cellspacing="0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Dosen</th>
+                            <th>Matkul</th>
+                            <th>SKS</th>
+                            <th>Kelas</th>
+                            <th>Hari</th>
+                            <th>Mulai</th>
+                            <th>Selesai</th>
+                            <th>Gedung</th>
+                            <th>Lantai</th>
+                            <th>Ruangan</th>
+                            <th>Tipe</th>
+                            {% if current_user.role == 'admin' %}
+                                <th>Aksi</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in jadwal_list %}
+                        <tr>
+                            <td>{{ item.id }}</td>
+                            <td>{{ item.nama_dosen }}</td>
+                            <td>{{ item.mata_kuliah }}</td>
+                            <td>{{ item.sks }}</td>
+                            <td>{{ item.kelas }}</td>
+                            <td>{{ item.hari }}</td>
+                            <td>{{ item.jam_mulai }}</td>
+                            <td>{{ item.jam_selesai }}</td>
+                            <td>{{ item.gedung }}</td>
+                            <td>{{ item.lantai }}</td>
+                            <td>{{ item.ruangan }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'info' if item.tipe_kelas == 'Offline' else 'secondary' }}">{{ item.tipe_kelas }}</span>
+                            </td>
+                            {% if current_user.role == 'admin' %}
+                            <td>
+                                <form method="POST" action="{{ url_for('delete_jadwal', jadwal_id=item.id) }}" onsubmit="return confirm('Yakin ingin menghapus jadwal ini?');">
+                                    <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-trash-fill"></i></button>
+                                </form>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="alert alert-info text-center">
+                    Tidak ada jadwal yang ditemukan sesuai filter.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Ketersediaan Ruangan{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800"><i class="bi bi-door-open-fill me-2"></i> Ketersediaan Ruangan</h1>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Pilih Hari</h6>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('halaman_ruangan_tersedia') }}" method="GET" class="row g-3 align-items-end">
+                <div class="col-md-9">
+                    <label for="hari" class="form-label">Pilih hari untuk melihat ketersediaan ruangan:</label>
+                    <select name="hari" id="hari" class="form-select">
+                        <option value="" disabled {% if not selected_day %}selected{% endif %}>-- Pilih Hari --</option>
+                        {% for day in days %}
+                        <option value="{{ day }}" {% if selected_day == day %}selected{% endif %}>{{ day }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">Tampilkan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if selected_day %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+             <h6 class="m-0 font-weight-bold text-primary">Ketersediaan untuk Hari {{ selected_day }}</h6>
+        </div>
+        <div class="card-body">
+             {% if room_availability_blocks %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    {% for room, blocks in room_availability_blocks.items()|sort %}
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-header bg-dark text-white">
+                                <i class="bi bi-building me-2"></i> <strong>{{ room }}</strong>
+                            </div>
+                            <div class="card-body p-0">
+                                <ul class="list-group list-group-flush">
+                                    {% for block in blocks %}
+                                        {% if block.status == 'Tersedia' %}
+                                            <a href="{{ url_for('halaman_booking', day=selected_day, room=room, start_time=block.start, end_time=block.end, gedung=room[0], lantai=room[1]) }}"
+                                               class="list-group-item list-group-item-action list-group-item-success d-flex justify-content-between align-items-center">
+                                                <span><i class="bi bi-clock me-2"></i>{{ block.start }} - {{ block.end }}</span>
+                                                <span class="badge bg-primary rounded-pill">Booking</span>
+                                            </a>
+                                        {% elif block.status == 'Istirahat' %}
+                                             <li class="list-group-item list-group-item-secondary d-flex justify-content-between align-items-center">
+                                                <span><i class="bi bi-cup-straw me-2"></i>{{ block.start }} - {{ block.end }}</span>
+                                                <span class="badge bg-dark rounded-pill">{{ block.status }}</span>
+                                            </li>
+                                        {% else %}
+                                            <li class="list-group-item list-group-item-danger d-flex justify-content-between align-items-center">
+                                                <span><i class="bi bi-x-circle me-2"></i>{{ block.start }} - {{ block.end }}</span>
+                                                <span class="badge bg-dark rounded-pill">{{ block.status }}</span>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info text-center">Tidak ada data ketersediaan untuk hari ini.</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
